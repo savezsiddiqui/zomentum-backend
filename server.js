@@ -14,7 +14,7 @@ connectDB();
 
 // Using node-cron to delete expired tickets
 // every 8 hours
-cron.schedule("* * * * *", async () => {
+cron.schedule("* */8 * * *", async () => {
     try {
         const result = await Ticket.find({ show: { $lt: new Date() - (8 * 60 * 60 * 1000) } });
         if (Array.isArray(result) && result.length > 0) {
