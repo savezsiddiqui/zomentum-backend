@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Ticket = require('../model/ticket');
+const User = require('../model/user');
 const { check, validationResult } = require('express-validator');
 
 
@@ -10,7 +11,7 @@ const { check, validationResult } = require('express-validator');
 
 router.post('/', [
     check(
-        'user',
+        'name',
         'Username is required'
     ).not().isEmpty(),
     check(
@@ -22,22 +23,30 @@ router.post('/', [
         'Timing is required'
     ).not().isEmpty()
 ], async (req, res) => {
-    const errors = validationResult(req);
 
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { timing } = req.body;
-    const show_date = new Date(timing.slice(0, timing.length - 6) + 'Z');
-    const newTicket = { ...req.body, show_date };
-
     try {
-
-        const tickets = await Ticket.find({ timing: req.body.timing });
-
-        if (tickets.length >= 20)
+        const { name, phone, timing } = req.body;
+        const tickets = await Ticket.find({ timing });
+        if (tickets.length >= 20) {
             return res.status(400).json({ msg: 'No more tickets can be booked for this time slot' });
+        }
+
+        let user = await User.findOne({ phone });
+        if (!user) {
+            user = new User({ name, phone });
+            await user.save();
+        }
+
+        const newTicket = {
+            userid: user.id,
+            timing,
+            show: new Date(timing.split(' ').join('T') + 'Z')
+        }
 
         const ticket = new Ticket(newTicket);
         await ticket.save();
@@ -54,7 +63,7 @@ router.post('/', [
 
 router.get('/', async (req, res) => {
     try {
-        const tickets = await Ticket.find({}).sort({ show_date: -1 });
+        const tickets = await Ticket.find({}).sort({ booked: -1 });
         res.json(tickets);
     } catch (error) {
         console.error(error.message);
@@ -74,7 +83,6 @@ router.put('/:id', [
 ], async (req, res) => {
 
     const errors = validationResult(req);
-
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
@@ -90,7 +98,7 @@ router.put('/:id', [
             {
                 $set: {
                     timing,
-                    show_date: new Date(timing.slice(0, timing.length - 6) + 'Z')
+                    show: new Date(timing.split(' ').join('T') + 'Z')
                 }
             },
             { new: true }
@@ -128,7 +136,7 @@ router.delete('/:id', async (req, res) => {
 
 router.get('/:time', async (req, res) => {
     try {
-        const tickets = await Ticket.find({ timing: req.params.time }).sort({ show_date: -1 });
+        const tickets = await Ticket.find({ timing: req.params.time }).sort({ booked: -1 });
         res.json(tickets);
     } catch (error) {
         console.error(error.message);
@@ -142,9 +150,12 @@ router.get('/:time', async (req, res) => {
 
 router.get('/user/:id', async (req, res) => {
     try {
-        const detail = await Ticket.findById(req.params.id);
-        const { user, phone } = detail;
-        res.json({ user, phone });
+        const ticket = await Ticket.findById(req.params.id);
+        if (!ticket) {
+            return res.status(400).json({ msg: 'Ticket not found' });
+        }
+        const user = await User.findById(ticket.userid);
+        res.json(user);
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');

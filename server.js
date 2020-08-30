@@ -16,7 +16,7 @@ connectDB();
 // every 8 hours
 cron.schedule("* * * * *", async () => {
     try {
-        const result = await Ticket.find({ show_date: { $lt: new Date() - (8 * 60 * 60 * 1000) } });
+        const result = await Ticket.find({ show: { $lt: new Date() - (8 * 60 * 60 * 1000) } });
         if (Array.isArray(result) && result.length > 0) {
             const pathtofile = path.resolve(__dirname, 'logs', 'logs.txt');
             const log = fs.createWriteStream(pathtofile, { flags: 'a' });
@@ -26,7 +26,7 @@ cron.schedule("* * * * *", async () => {
             });
             log.end();
 
-            await Ticket.deleteMany({ show_date: { $lt: new Date() - (8 * 60 * 60 * 1000) } });
+            await Ticket.deleteMany({ show: { $lt: new Date() - (8 * 60 * 60 * 1000) } });
             console.log('Old Tickets Deleted');
         }
     } catch (error) {

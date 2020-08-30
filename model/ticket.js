@@ -2,23 +2,19 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const TicketSchema = new Schema({
-    user: {
-        type: String,
-        required: true
-    },
-    phone: {
-        type: String,
+    userid: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user',
         required: true
     },
     timing: {
         type: String,
         required: true
     },
-    show_date: {
-        type: Date,
-        required: true
+    show: {
+        type: Date
     },
-    date_booked: {
+    booked: {
         type: Date,
         default: new Date()
     }
