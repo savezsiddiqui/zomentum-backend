@@ -14,7 +14,11 @@ const TicketSchema = new Schema({
         type: String,
         required: true
     },
-    date: {
+    show_date: {
+        type: Date,
+        required: true
+    },
+    date_booked: {
         type: Date,
         default: new Date()
     }

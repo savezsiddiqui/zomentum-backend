@@ -28,7 +28,9 @@ router.post('/', [
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const newTicket = { ...req.body };
+    const { timing } = req.body;
+    const show_date = new Date(timing.slice(0, timing.length - 6) + 'Z');
+    const newTicket = { ...req.body, show_date };
 
     try {
 
@@ -52,7 +54,7 @@ router.post('/', [
 
 router.get('/', async (req, res) => {
     try {
-        const tickets = await Ticket.find({}).sort({ date: -1 });
+        const tickets = await Ticket.find({}).sort({ show_date: -1 });
         res.json(tickets);
     } catch (error) {
         console.error(error.message);
@@ -61,7 +63,7 @@ router.get('/', async (req, res) => {
 })
 
 // @route   PUT api/ticket/:id
-// @desc    update a ticket
+// @desc    update a tickets timing by id
 // @access  public
 
 router.put('/:id', [
@@ -82,9 +84,15 @@ router.put('/:id', [
         if (!ticket) {
             return res.status(400).json({ msg: 'ticket not found' });
         }
+        const { timing } = req.body;
         const updatedTicket = await Ticket.findByIdAndUpdate(
             req.params.id,
-            { $set: { timing: req.body.timing } },
+            {
+                $set: {
+                    timing,
+                    show_date: new Date(timing.slice(0, timing.length - 6) + 'Z')
+                }
+            },
             { new: true }
         );
         res.json(updatedTicket);
@@ -120,7 +128,7 @@ router.delete('/:id', async (req, res) => {
 
 router.get('/:time', async (req, res) => {
     try {
-        const tickets = await Ticket.find({ timing: req.params.time }).sort({ date: -1 });
+        const tickets = await Ticket.find({ timing: req.params.time }).sort({ show_date: -1 });
         res.json(tickets);
     } catch (error) {
         console.error(error.message);
